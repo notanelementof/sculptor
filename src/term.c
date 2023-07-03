@@ -108,6 +108,7 @@ void term_flush(terminal_t *term) {
 			printf("\033[38;2;%d;%d;%dm\033[48;2;%d;%d;%dm%c", tc->fr, tc->fg, tc->fb, tc->br, tc->bg, tc->bb, tc->ch);
 		}
 	}
+	fflush(stdout);
 	// copy curr to prev
 	memcpy(term->prev, term->curr, term->width*term->height*sizeof(tchar_t));
 }
