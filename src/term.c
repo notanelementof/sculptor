@@ -54,6 +54,14 @@ termsize_t get_term_size(void) {
 	return (termsize_t){w.ws_col, w.ws_row};
 }
 
+void show_cursor(void) {
+	printf("\033[?25h");
+}
+
+void hide_cursor(void) {
+	printf("\033[?25l");
+}
+
 // terminal
 
 terminal_t *term_new(void) {
@@ -93,7 +101,7 @@ void term_flush(terminal_t *term) {
 		// skip this row if it's not different
 		if(memcmp(row, &term->prev[i*term->width], term->width*sizeof(tchar_t)) == 0)
 			continue;
-		printf("\033[%zu;0H", i); // move to row
+		printf("\033[%zu;1H", i+1); // move to row
 		// print each char
 		for(size_t i = 0; i < term->width; i++) {
 			tchar_t *tc = &row[i];
@@ -105,6 +113,8 @@ void term_flush(terminal_t *term) {
 }
 
 void term_putch(terminal_t *term, size_t x, size_t y, color_t fg, color_t bg, char ch) {
+	if(x >= term->width || y >= term->height)
+		return; // out of bounds
 	tchar_t *tc = &term->curr[y*term->width+x];
 	tc->ch = ch;
 	if(!fg.transparent) {

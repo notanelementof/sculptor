@@ -1,2 +1,2 @@
 #!/bin/sh
-gcc src/*.c -o sculptor
+gcc src/*.c -o sculptor $@

@@ -60,6 +60,10 @@ void reset_termios(void); /// Resets termios (automatically registered atexit by
 int getch(void); /// Get a char
 bool kbhit(void); /// Returns true if the keyboard is hit
 
+// self-explanatory
+void hide_cursor(void);
+void show_cursor(void);
+
 termsize_t get_term_size(void); /// Gets the current terminal size
 
 terminal_t *term_new(void); /// Creates a new terminal with the current terminal size
