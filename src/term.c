@@ -56,10 +56,12 @@ termsize_t get_term_size(void) {
 
 void show_cursor(void) {
 	printf("\033[?25h");
+	fflush(stdout);
 }
 
 void hide_cursor(void) {
 	printf("\033[?25l");
+	fflush(stdout);
 }
 
 // terminal

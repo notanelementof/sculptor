@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Runs valgrind and outputs to valgrind.log
+
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind.log ./sculptor

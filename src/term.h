@@ -41,6 +41,13 @@ typedef struct tchar {
 	uint8_t fr, fg, fb, br, bg, bb;
 } tchar_t;
 
+/// Some useful keys
+enum key {
+	KEY_ENTER = '\r',
+	KEY_ESCAPE = '\033',
+	KEY_BACKSPACE = 0x7F
+};
+
 /// Represents a terminal
 typedef struct terminal {
 	size_t width, height;

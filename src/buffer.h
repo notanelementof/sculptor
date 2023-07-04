@@ -37,10 +37,11 @@ typedef struct buffers {
 
 buffers_t *buffers_new(terminal_t *term); /// Creates a new buffer group
 void buffers_free(buffers_t *b); /// Free a buffer group (and all its children)
-void buffers_add(buffers_t *b, uint64_t id, void *data, char *name, uint32_t size, bool (*key)(buffer_t *, int), void (*render)(buffer_t *), void (*free)(buffer_t *)); /// Add a buffer
+buffer_t *buffers_add(buffers_t *b, bool set_active, uint64_t id, void *data, char *name, uint32_t size, bool (*key)(buffer_t *, int), void (*render)(buffer_t *), void (*free)(buffer_t *)); /// Add a buffer. Returns a pointer to the created buffer
 void buffers_remove(buffers_t *b, uint64_t id); /// Remove a buffer from a group
 void buffers_render(buffers_t *b); /// Renders all buffers
 bool buffers_key(buffers_t *b, int key); /// Tells a buffer group that a keyboard input has occured. Returns true if the key was consumed by the active buffer. Also handles the `1` and `2` keys for switching the active buffer
+void buffers_clear(buffers_t *b); /// Delete all buffers within a buffers group
 
 uint64_t next_buffer_id(void); /// Gives a new unique buffer ID
 

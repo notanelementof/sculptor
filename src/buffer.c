@@ -19,9 +19,12 @@ void buffers_free(buffers_t *b) {
 	free(b);
 }
 
-void buffers_add(buffers_t *b, uint64_t id, void *data, char *name, uint32_t size, bool (*key)(buffer_t *, int), void (*render)(buffer_t *), void (*free)(buffer_t *)) {
+buffer_t *buffers_add(buffers_t *b, bool set_active, uint64_t id, void *data, char *name, uint32_t size, bool (*key)(buffer_t *, int), void (*render)(buffer_t *), void (*free)(buffer_t *)) {
 	b->items = realloc(b->items, sizeof(buffer_t)*(++b->len));
 	b->items[b->len-1] = (buffer_t){id, data, name, b, size, 0, 0, key, render, free};
+	if(set_active)
+		b->active = b->len-1;
+	return &b->items[b->len-1];
 }
 
 void buffers_remove(buffers_t *b, uint64_t id) {
@@ -80,6 +83,14 @@ bool buffers_key(buffers_t *b, int key) {
 			return true;
 	}
 	return false;
+}
+
+void buffers_clear(buffers_t *b) {
+	for(size_t i = 0; i < b->len; i++)
+		buffer_free(&b->items[i]);
+	free(b->items);
+	b->items = NULL;
+	b->len = 0;
 }
 
 uint64_t next_buffer_id(void) {
