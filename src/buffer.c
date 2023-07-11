@@ -21,7 +21,7 @@ void buffers_free(buffers_t *b) {
 
 buffer_t *buffers_add(buffers_t *b, bool set_active, uint64_t id, void *data, char *name, uint32_t size, bool (*key)(buffer_t *, int), void (*render)(buffer_t *), void (*free)(buffer_t *)) {
 	b->items = realloc(b->items, sizeof(buffer_t)*(++b->len));
-	b->items[b->len-1] = (buffer_t){id, data, name, b, size, 0, 0, key, render, free};
+	b->items[b->len-1] = (buffer_t){id, data, name, b, size, 0, 0, 0, key, render, free};
 	if(set_active)
 		b->active = b->len-1;
 	return &b->items[b->len-1];
@@ -37,6 +37,8 @@ void buffers_remove(buffers_t *b, uint64_t id) {
 	}
 	return; // buffer was not found
 	found:
+	if(idx == b->active)
+		b->active = 0;
 	buffer_free(&b->items[idx]);
 	if(b->len == 1) {
 		// realloc can't work with new_size of 0, so here we just free items
@@ -45,7 +47,7 @@ void buffers_remove(buffers_t *b, uint64_t id) {
 		return;
 	}
 	// shift all elements after idx
-	memmove(&b->items[idx], &b->items[idx+1], b->len-idx);
+	memmove(&b->items[idx], &b->items[idx+1], sizeof(buffer_t)*(b->len-idx-1));
 	b->items = realloc(b->items, (--b->len)*sizeof(buffer_t));
 }
 
@@ -58,6 +60,7 @@ void buffers_render(buffers_t *b) {
 	for(size_t i = 0; i < b->len; i++) {
 		buffer_t *buf = &b->items[i];
 		buf->width = (uint32_t)((buf->size/(double)sum)*(double)b->term->width);
+		buf->height = b->term->height-1;
 		buf->x = width_sum;
 		width_sum += buf->width;
 		buffer_render(buf, i == b->active);

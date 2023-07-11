@@ -23,7 +23,7 @@ color_t color(uint8_t r, uint8_t g, uint8_t b);
 #define COLOR_MAGENTA (color_t){128, 0, 128, false}
 #define COLOR_YELLOW (color_t){128, 128, 0, false}
 #define COLOR_LIGHT_GRAY (color_t){192, 192, 192, false}
-#define COLOR_DARK_GRAY (color_t){255, 255, 255, false}
+#define COLOR_DARK_GRAY (color_t){64, 64, 64, false}
 #define COLOR_LIGHT_BLUE (color_t){0, 0, 255, false}
 #define COLOR_LIGHT_GREEN (color_t){0, 255, 0, false}
 #define COLOR_LIGHT_CYAN (color_t){0, 255, 255, false}

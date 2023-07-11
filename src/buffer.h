@@ -21,7 +21,7 @@ typedef struct buffer {
 	char *name; /// Name of the buffer (should be heap-allocated)
 	buffers_t *parent; /// The parent buffers_t
 	uint32_t size; /// The size of the buffer horizontally. The way this works is that the % of the total size is multiplied by the termiunal wuwidth to get the actual size.
-	uint32_t x, width; /// X position and width of the buffer. calculated eachf rame before render() is called
+	uint32_t x, width, height; /// X position, width and height of the buffer. calculated eachf rame before render() is called
 	bool (*key)(buffer_t *this, int key); /// Called when a key is pressed while a buffer is active. should return true when the key input is used.
 	void (*render)(buffer_t *this); /// Called each frame
 	void (*free)(buffer_t *this); /// Function called to do cleanup. Should not do `free(this->data)`, as that is done automatically after this function finishes.

@@ -60,3 +60,4 @@ dkms.conf
 
 # etc
 valgrind.log
+projects/

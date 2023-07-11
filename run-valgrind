@@ -1,5 +1,6 @@
 #!/bin/sh
 
-# Runs valgrind and outputs to valgrind.log
+# Compiles program, runs valgrind and outputs to valgrind.log
 
+./build -g
 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind.log ./sculptor

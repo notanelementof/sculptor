@@ -1,3 +1,5 @@
+/// For creation and manipulation of menu buffers
+
 #ifndef BUFFER_MENU_H
 #define BUFFER_MENU_H
 
@@ -32,6 +34,9 @@ typedef struct menu {
 	size_t selected; /// Index of the selected item
 	menu_item_t *items; /// Menu items
 	bool locked; /// Whenever the menu is 'locked' on a specific item. The use is basically just making enterable text boxes
+	char *msg; /// A message to be shown.
+	buffers_t *buffers; /// Buffer this menu is in
+	buffer_t *buffer; /// Buffer of this menu
 } menu_t;
 
 /// Info about a menu
@@ -49,5 +54,9 @@ menu_item_t menu_numbox(char *label, double default_value, double min, double ma
 
 char *menu_get_textbox_value(menu_t *menu, char *id); /// Gets the value of a textbox in a menu. Returns NULL if the textbox can't be found
 double menu_get_numbox_value(menu_t *menu, char *id); /// Gets the value of a numbox in a menu. Returns NaN if the numbox can't be found.
+
+void menu_add_item(menu_t *menu, menu_item_t item); /// Adds an item to an existing menu
+void menu_msg(menu_t *menu, char *msg); /// Show a menu message
+void menu_close(menu_t *menu); /// Closes the buffer a menu belongs to
 
 #endif

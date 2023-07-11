@@ -43,6 +43,8 @@ static void menu_render(buffer_t *this) {
 		buffer_printf(this, x-strlen(text)/2, y+i, i == menu->selected ? menu->locked ? COLOR_LIGHT_RED : COLOR_LIGHT_GREEN : COLOR_WHITE, COLOR_BLACK, "%s", text);
 		free(text);
 	}
+	if(menu->msg != NULL)
+		buffer_printf(this, 0, this->height-1, COLOR_RED, COLOR_BLACK, menu->msg);
 }
 
 static void menu_free(buffer_t *this) {
@@ -54,6 +56,7 @@ static void menu_free(buffer_t *this) {
 		free(mi->data);
 	}
 	free(menu->items);
+	free(menu->msg);
 }
 
 menu_info_t menu_create(buffers_t *b, bool set_active, char *name, uint32_t size, size_t len, ...) {
@@ -69,9 +72,10 @@ menu_info_t menu_create(buffers_t *b, bool set_active, char *name, uint32_t size
 	}
 	va_end(ap);
 
-	*menu = (menu_t){len, 0, items, false};
+	*menu = (menu_t){len, 0, items, false, NULL, b};
 	uint64_t id = next_buffer_id();
 	buffer_t *buf = buffers_add(b, set_active, id, menu, strdup(name), size, &menu_key, &menu_render, &menu_free);
+	menu->buffer = buf;
 	return (menu_info_t){id, buf, menu};
 }
 
@@ -246,4 +250,19 @@ double menu_get_numbox_value(menu_t *menu, char *id) {
 			return nb->value;
 	}
 	return NAN;
+}
+
+void menu_add_item(menu_t *menu, menu_item_t item) {
+	menu->items = realloc(menu->items, sizeof(menu_item_t)*(++menu->len));
+	menu->items[menu->len-1] = item;
+}
+
+void menu_msg(menu_t *menu, char *msg) {
+	if(menu->msg != NULL)
+		free(menu->msg);
+	menu->msg = strdup(msg);
+}
+
+void menu_close(menu_t *menu) {
+	buffers_remove(menu->buffers, menu->buffer->id);
 }
