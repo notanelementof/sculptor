@@ -6,6 +6,7 @@
 
 #include "menu.h"
 #include "../term.h"
+#include "../util.h"
 
 static bool menu_key(buffer_t *this, int key) { 
 	menu_t *menu = (menu_t *)this->data;
@@ -169,7 +170,7 @@ static bool textbox_key(menu_item_t *this, int key) {
 			return true;
 		}
 		default:
-			if(key >= 0x20 && key <= 0x7E) {
+			if(is_printable(key)) {
 				size_t len = strlen(tb->value);
 				if(len+1 >= tb->len)
 					return true;

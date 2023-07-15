@@ -21,3 +21,7 @@ uint64_t millis(void) {
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec*1000 + tv.tv_usec/1000;
 }
+
+bool is_printable(char c) {
+	return c >= 0x20 && c <= 0x7E;
+}

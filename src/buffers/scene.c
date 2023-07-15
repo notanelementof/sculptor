@@ -18,15 +18,44 @@ typedef enum scene_mode {
 typedef struct sceneb {
 	scene_mode_t mode;
 	size_t x, y, z; // x y and z positions 
+	color_t msg_color; // color of the message
+	char *msg; // a message that can be displayed
 	// view mode
 	char *input; // buffer for keybindings (like the one in vim)
 	// insert mode
 	color_t fg, bg;
+	char *insert_buf; // buffer for text
 } sceneb_t;
 
-static void clear_input(sceneb_t *sb) {
+static void sceneb_clear_input(sceneb_t *sb) {
 	free(sb->input);
 	sb->input = NULL;
+}
+
+static void sceneb_msg(sceneb_t *sb, color_t col, char *msg) {
+	free(sb->msg);
+	sb->msg = strdup(msg);
+	sb->msg_color = col;
+}
+
+static void sceneb_set_mode(sceneb_t *sb, scene_mode_t mode) {
+	switch(mode) {
+		case SM_INSERT:
+			free(sb->insert_buf);
+			sb->insert_buf = NULL;
+			break;
+	}
+	sb->mode = mode;
+	switch(mode) {
+		case SM_VIEW:
+			sceneb_msg(sb, COLOR_WHITE, "");
+			break;
+		case SM_INSERT:
+			sceneb_msg(sb, COLOR_WHITE, "-- INSERT --");
+			sb->insert_buf = malloc(1);
+			sb->insert_buf[0] = '\0';
+			break;
+	}
 }
 
 static bool sceneb_key(buffer_t *this, int key) {
@@ -34,10 +63,10 @@ static bool sceneb_key(buffer_t *this, int key) {
 	switch(sb->mode) {
 		case SM_VIEW: {
 			if(key == KEY_ESCAPE) {
-				clear_input(sb);
+				sceneb_clear_input(sb);
 				return true;
 			}
-			if(!((key >= 'a' && key <= 'z') || (key >= 'A' && key <= 'Z')))
+			if(!is_printable(key))
 				return false;
 			// add key to sb->input
 			if(sb->input == NULL) {
@@ -50,19 +79,19 @@ static bool sceneb_key(buffer_t *this, int key) {
 			sb->input[len+1] = '\0';
 			// test sb->input for combinations
 			if(strcmp(sb->input, "q") == 0) {
-				clear_input(sb);
+				sceneb_clear_input(sb);
 				project_free(curr_project);
 				open_main_menu(this->parent);
 				return true;
 			}
-			if(strcmp(sb->input, "Sn") == 0) {
-				clear_input(sb);
+			if(strcmp(sb->input, "cn") == 0) {
+				sceneb_clear_input(sb);
 				open_create_scene_menu(this->parent);
 				return true;
 			}
 			#define MOVE(DEC, INC, COORD, SIZE) \
 			if(strcmp(sb->input, DEC) == 0) { \
-				clear_input(sb); \
+				sceneb_clear_input(sb); \
 				if(sb->COORD == 0) \
 					sb->COORD = curr_project->scene->SIZE-1; \
 				else \
@@ -70,7 +99,7 @@ static bool sceneb_key(buffer_t *this, int key) {
 				return true; \
 			} \
 			if(strcmp(sb->input, INC) == 0) { \
-				clear_input(sb); \
+				sceneb_clear_input(sb); \
 				if(sb->COORD+1 == curr_project->scene->SIZE) \
 					sb->COORD = 0; \
 				else \
@@ -81,6 +110,41 @@ static bool sceneb_key(buffer_t *this, int key) {
 			MOVE("a", "d", x, width);
 			MOVE(",", ".", z, height);
 			#undef MOVE
+			if(strcmp(sb->input, "i") == 0) {
+				sceneb_clear_input(sb);
+				sceneb_set_mode(sb, SM_INSERT);
+				return true;
+			}
+			return true;
+		}
+		case SM_INSERT: {
+			if(key == KEY_ESCAPE) {
+				sceneb_set_mode(sb, SM_VIEW);
+				return true;
+			}
+			size_t len = strlen(sb->insert_buf);
+			if(key == KEY_BACKSPACE) {
+				if(len != 0) {
+					sb->insert_buf[len-1] = '\0';
+					sb->insert_buf = realloc(sb->insert_buf, len);
+				}
+				return true;
+			}
+			if(key == KEY_ENTER) {
+				for(size_t i = 0; i < len; i++)
+					scene_putch(curr_project->scene, sb->x+i, sb->y, sb->z, sb->fg, sb->bg, sb->insert_buf[i]);
+				sceneb_set_mode(sb, SM_VIEW);
+				return true;
+			}
+			if(!is_printable(key))
+				return false;
+			if(sb->x+1 == curr_project->scene->width)
+				return false;
+			if(sb->x+len == curr_project->scene->width-1)
+				return true;
+			sb->insert_buf = realloc(sb->insert_buf, len+2);
+			sb->insert_buf[len] = key;
+			sb->insert_buf[++len] = '\0';
 			return true;
 		}
 	}
@@ -91,27 +155,36 @@ static void sceneb_render(buffer_t *this) {
 	sceneb_t *sb = (sceneb_t *)this->data;
 	if(curr_project->scene == NULL) {
 		// no scene loaded
-		char *text = "No scene loaded. Type `Sn` to create a new scene, or `Sl` to load a scene.";
+		char *text = "No scene loaded. Type `cn` to create a new scene, or `cl` to load a scene.";
 		buffer_printf(this, this->width/2-strlen(text)/2, this->height/2, COLOR_LIGHT_GRAY, COLOR_BLACK, text);
 	} else {
 		scene_render(this, curr_project->scene, false, 0, sb->x, sb->y, sb->z);
+		// mode-specific rendering
+		switch(sb->mode) {
+			case SM_INSERT:
+				buffer_printf(this, this->width/2, this->height/2, sb->fg, sb->bg, "%s", sb->insert_buf);
+		}
 		// render cursor
 		if(millis()%1000 < 500) {
-			buffer_putch(this, this->width/2, this->height/2, COLOR_WHITE, COLOR_BLACK, '_');
+			buffer_putch(this, this->width/2+(sb->mode == SM_INSERT ? strlen(sb->insert_buf) : 0), this->height/2, sb->fg, sb->bg, '_');
 		}
 	}
 	if(sb->input != NULL)
 		buffer_printf(this, this->width-strlen(sb->input), this->height-1, COLOR_WHITE, COLOR_BLACK, "%s", sb->input);
+	if(sb->msg != NULL)
+		buffer_printf(this, 0, this->height-1, sb->msg_color, COLOR_BLACK, "%s", sb->msg);
 }
 
 void sceneb_free(buffer_t *this) {
 	sceneb_t *sb = (sceneb_t *)this->data;
 	free(sb->input);
+	free(sb->insert_buf);
+	free(sb->msg);
 }
 
 void open_scene_buffer(buffers_t *b) {
 	sceneb_t *sb = malloc(sizeof(sceneb_t));
-	*sb = (sceneb_t){SM_VIEW, 0, 0, 0, NULL, COLOR_WHITE, COLOR_BLACK};
+	*sb = (sceneb_t){SM_VIEW, 0, 0, 0, COLOR_WHITE, NULL, NULL, COLOR_WHITE, COLOR_BLACK, NULL};
 	buffers_add(b, true, next_buffer_id(), sb, strdup("Scene"), 4, &sceneb_key, &sceneb_render, &sceneb_free);
 }
 

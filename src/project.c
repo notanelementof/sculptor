@@ -99,6 +99,10 @@ scene_char_t *scene_getch(scene_t *scene, size_t x, size_t y, size_t z) {
 	return &scene->chars[z*scene->width*scene->height+y*scene->width+x];
 }
 
+void scene_putch(scene_t *scene, size_t x, size_t y, size_t z, color_t fg, color_t bg, char c) {
+	scene->chars[z*scene->width*scene->height+y*scene->width+x] = (scene_char_t){fg, bg, c};
+}
+
 void open_project_menu(buffers_t *b) {
 	buffers_clear(b);
 	open_scene_buffer(b); 

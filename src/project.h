@@ -69,6 +69,7 @@ typedef struct scene {
 scene_t *scene_create(size_t w, size_t l, size_t h, scene_char_t fill); /// Create a scene with a given size and char to fill it
 void scene_free(scene_t *s);
 scene_char_t *scene_getch(scene_t *scene, size_t x, size_t y, size_t z); /// Gets a char in a scene
+void scene_putch(scene_t *scene, size_t x, size_t y, size_t z, color_t fg, color_t bg, char c); /// Gets a char in a scene
 
 /// Represents a project
 typedef struct project {
