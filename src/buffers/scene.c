@@ -7,6 +7,7 @@
 #include "../term.h"
 #include "../util.h"
 #include "menu.h"
+#include "colorpicker.h"
 
 #include "scene.h"
 
@@ -58,6 +59,10 @@ static void sceneb_set_mode(sceneb_t *sb, scene_mode_t mode) {
 	}
 }
 
+static void set_color_cb(void *data, color_t col) {
+	*(color_t *)data = col;
+}
+
 static bool sceneb_key(buffer_t *this, int key) {
 	sceneb_t *sb = (sceneb_t *)this->data;
 	switch(sb->mode) {
@@ -78,38 +83,54 @@ static bool sceneb_key(buffer_t *this, int key) {
 			sb->input[len] = key;
 			sb->input[len+1] = '\0';
 			// test sb->input for combinations
+			// quit
 			if(strcmp(sb->input, "q") == 0) {
 				sceneb_clear_input(sb);
 				project_free(curr_project);
 				open_main_menu(this->parent);
 				return true;
 			}
+			// scene actions
 			if(strcmp(sb->input, "cn") == 0) {
 				sceneb_clear_input(sb);
 				open_create_scene_menu(this->parent);
 				return true;
 			}
-			#define MOVE(DEC, INC, COORD, SIZE) \
+			if(strcmp(sb->input, "cf") == 0) {
+				sceneb_clear_input(sb);
+				open_colorpicker(this->parent, true, 3, &set_color_cb, sb->fg, &sb->fg);
+				return true;
+			}
+			if(strcmp(sb->input, "cb") == 0) {
+				sceneb_clear_input(sb);
+				open_colorpicker(this->parent, true, 3, &set_color_cb, sb->bg, &sb->bg);
+				return true;
+			}
+			// movement actions
+			#define MOVE(DEC, INC, COORD, SIZE, N) \
 			if(strcmp(sb->input, DEC) == 0) { \
 				sceneb_clear_input(sb); \
-				if(sb->COORD == 0) \
-					sb->COORD = curr_project->scene->SIZE-1; \
+				if(sb->COORD-N <= curr_project->scene->SIZE) \
+					sb->COORD -= N; \
 				else \
-					sb->COORD -= 1; \
+					sb->COORD = 0; \
 				return true; \
 			} \
 			if(strcmp(sb->input, INC) == 0) { \
 				sceneb_clear_input(sb); \
-				if(sb->COORD+1 == curr_project->scene->SIZE) \
-					sb->COORD = 0; \
+				if(sb->COORD+N <= curr_project->scene->SIZE) \
+					sb->COORD += N; \
 				else \
-					sb->COORD += 1; \
+					sb->COORD = curr_project->scene->SIZE-1; \
 				return true; \
 			}
-			MOVE("w", "s", y, length);
-			MOVE("a", "d", x, width);
-			MOVE(",", ".", z, height);
+			MOVE("w", "s", y, length, 1);
+			MOVE("a", "d", x, width, 1);
+			MOVE("W", "S", y, length, 5);
+			MOVE("A", "D", x, width, 5);
+			MOVE(",", ".", z, height, 1);
 			#undef MOVE
+			// mode changes
 			if(strcmp(sb->input, "i") == 0) {
 				sceneb_clear_input(sb);
 				sceneb_set_mode(sb, SM_INSERT);
@@ -134,6 +155,8 @@ static bool sceneb_key(buffer_t *this, int key) {
 				for(size_t i = 0; i < len; i++)
 					scene_putch(curr_project->scene, sb->x+i, sb->y, sb->z, sb->fg, sb->bg, sb->insert_buf[i]);
 				sceneb_set_mode(sb, SM_VIEW);
+				sb->y++;
+				sb->y %= curr_project->scene->height;
 				return true;
 			}
 			if(!is_printable(key))
@@ -158,15 +181,15 @@ static void sceneb_render(buffer_t *this) {
 		char *text = "No scene loaded. Type `cn` to create a new scene, or `cl` to load a scene.";
 		buffer_printf(this, this->width/2-strlen(text)/2, this->height/2, COLOR_LIGHT_GRAY, COLOR_BLACK, text);
 	} else {
-		scene_render(this, curr_project->scene, false, 0, sb->x, sb->y, sb->z);
+		scene_render(this, curr_project->scene, false, 0, sb->x+(sb->mode == SM_INSERT ? strlen(sb->insert_buf) : 0), sb->y, sb->z);
 		// mode-specific rendering
 		switch(sb->mode) {
 			case SM_INSERT:
-				buffer_printf(this, this->width/2, this->height/2, sb->fg, sb->bg, "%s", sb->insert_buf);
+				buffer_printf(this, this->width/2-strlen(sb->insert_buf), this->height/2, sb->fg, sb->bg, "%s", sb->insert_buf);
 		}
 		// render cursor
 		if(millis()%1000 < 500) {
-			buffer_putch(this, this->width/2+(sb->mode == SM_INSERT ? strlen(sb->insert_buf) : 0), this->height/2, sb->fg, sb->bg, '_');
+			buffer_putch(this, this->width/2, this->height/2, sb->fg, sb->bg, '_');
 		}
 	}
 	if(sb->input != NULL)
